@@ -1,0 +1,6 @@
+{
+  "name": "event-handler",
+  "version": "1.0.0",
+  "description": "handles events about development process",
+  "main": "index.js"
+}
