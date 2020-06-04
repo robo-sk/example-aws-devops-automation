@@ -6,8 +6,8 @@
     "license": "UNLICENSED",
     "scripts": {
         "cdk": "cdk",
-        "deploy:dev": "cdk deploy dev-devops-automation --profile private",
-        "bootstrap": "cdk bootstrap --profile private",
+        "deploy:dev": "cdk deploy dev-devops-automation",
+        "bootstrap": "cdk bootstrap",
         "eslint": "eslint . --ext .ts,.js",
         "build:sns-eventhander": "cd ./src/EventHandler && npm install",
         "build-fns": "npm-run-all build:*",
