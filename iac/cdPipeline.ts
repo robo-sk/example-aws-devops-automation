@@ -81,7 +81,7 @@ export class PipelineStack extends cdk.Stack {
                 artifacts: {
                     'secondary-artifacts': {
                         lambda1Files: {
-                            'base-directory': './src/syncEmailDomains',
+                            'base-directory': './src/EventHandler',
                             files: ['**/*'],
                             name: 'lambda1Files',
                         },

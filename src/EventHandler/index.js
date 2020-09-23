@@ -25,7 +25,6 @@ const processPullRequestEvent = async (record, message) => {
                     ...payload,
                 },
             });
-            log.debug('emeil sent', resp);
         } catch (e) {
             log.error('Error sending emails', e);
             throw e;
@@ -60,6 +59,8 @@ const processPipelineEvent = async (record, message) => {
                                 ...commitDesc,
                                 authorName: commit.commit.author.name,
                                 committerName: commit.commit.committer.name,
+                                pipeline,
+                                title: `Pipeline ${pipeline} failed`,
                             },
                         });
                         emailSent = true;

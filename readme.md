@@ -1,11 +1,11 @@
-# DevOps automation - Example
+# DevOps automation
 
 This project is about resources helping automate and improve DevOps processes.
 
 ## Assumptions / Key notes
 * IAM user has defined his/her email in a tag with the "email" key. So we can send emails in case of pull requests.
-* We use only npm and `package.json` to deploy/install... we hardcoded `npm` for now to build lambdas, so if you use yarn, just replace `npm install` to `yarn install`
-* AWS SES needs to be configured and ready to send emails
+* We use only npm and `package.json` to deploy/install... we hardcoded `yarn` for now to build lambdas, so if you use npm, just replace `yarn install` to `npm install`
+* AWS SES needs to be configured and ready to send emails. Configuration of the email address is in `iac/index.ts`.
 
 
 ## Covering areas / usecases
@@ -19,5 +19,9 @@ __Note__: approver for pull request needs to be added manually as the IAM user n
 When there is a commit that makes the pipeline failed, it sends an email notification to a committer of the commit.
 
 ## Deployment
+Configure your account and email address in `iac/index.ts`, set localDeploy to true and run:
+`yarn install && yarn aws:dev`
 
-`npm install && npm run aws:dev`
+## CD deployment
+Configure your account and in `iac/index.ts` and run:
+`yarn install && yarn deploy:dev:cd`

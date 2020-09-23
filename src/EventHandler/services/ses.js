@@ -43,7 +43,8 @@ const sendEmails = async ({ templateId, emails, params }) => {
         };
 
         log.debug('sending email: ', input);
-        resp = sesv2.sendEmail(input).promise();
+        resp = await sesv2.sendEmail(input).promise();
+        log.debug('emeil sent', resp);
     }
     return resp;
 };

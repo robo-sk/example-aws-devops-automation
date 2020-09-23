@@ -6,9 +6,10 @@
     "license": "UNLICENSED",
     "scripts": {
         "cdk": "cdk",
-        "deploy:dev": "cdk deploy dev-devops-automation",
         "bootstrap": "cdk bootstrap",
         "eslint": "eslint . --ext .ts,.js",
+        "eslint:no-tests": "eslint . --ext .ts,.js --ignore-pattern *tests*",
+        "deploy:dev": "cdk deploy dev-devops-automation",
         "build:sns-eventhander": "cd ./src/EventHandler && yarn install",
         "build-fns": "npm-run-all build:*",
         "b": "npm-run-all build:*",

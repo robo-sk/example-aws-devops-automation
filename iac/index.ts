@@ -7,7 +7,7 @@ import * as app from './mainApp';
 const projectName = 'devops-automation';
 
 const cdkApp = new cdk.App();
-const localDeploy = true; // never commit as true
+const localDeploy = false; // never commit as true
 
 /** *************************************************
  * DEV
