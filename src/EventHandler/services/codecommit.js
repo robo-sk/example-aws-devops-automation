@@ -17,14 +17,12 @@ const getCommit = async ({ commitId, repositoryName }) => {
     return codecommit.getCommit(params).promise();
 };
 
-
 const getPullRequest = async ({ pullRequestId }) => {
     const params = {
         pullRequestId,
     };
     return codecommit.getPullRequest(params).promise();
 };
-
 
 const PREFIX_APPROVERS = 'CodeCommitApprovers:';
 /**

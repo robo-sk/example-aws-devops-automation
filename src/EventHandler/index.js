@@ -7,10 +7,12 @@ const ses = require('./services/ses');
 
 /**
  * Handle pul request event
- * @param {object} payload
+ * @param {object} record
+ * @param {object} message
  */
-const processPullRequestEvent = async (payload) => {
+const processPullRequestEvent = async (record, message) => {
     let resp;
+    const { payload } = message || {};
     const { pullRequestId } = payload || {};
     if (pullRequestId) {
         try {
@@ -23,6 +25,7 @@ const processPullRequestEvent = async (payload) => {
                     ...payload,
                 },
             });
+            log.debug('emeil sent', resp);
         } catch (e) {
             log.error('Error sending emails', e);
             throw e;
@@ -32,21 +35,21 @@ const processPullRequestEvent = async (payload) => {
 };
 
 /**
- * Handle pul request event
- * @param {object} payload
+ * Handle codepipeline event
+ * @param {object} record
+ * @param {object} message
  */
-const processPipelineEvent = async (payload) => {
+const processPipelineEvent = async (record, message) => {
     let resp;
+    const { payload } = message || {};
     const { state, pipeline } = payload || {};
     const executionId = (payload || {})['execution-id'];
     if (state === 'FAILED') {
         try {
-            log.debug('payload', payload);
             const sourceCommits = await cp.getCommitInfoForPipeline(executionId, pipeline);
             if (sourceCommits && sourceCommits.length > 0) {
                 const promises = sourceCommits.map(async (commitDesc) => {
                     const commit = await cc.getCommit(commitDesc);
-                    log.debug('got commit', commit);
                     const { email } = ((commit || {}).commit || {}).committer;
                     let emailSent = false;
                     if (email && email.length > 0) {
@@ -83,65 +86,82 @@ const processPipelineEvent = async (payload) => {
     return resp;
 };
 
-/**
- * lambda handler listening on SNS event
- */
-exports.lambdaHandler = async (event) => {
-    try {
-        log.debug('Starting with event', event);
-        const { Records } = event;
-
-        // process all records by type in parallel
-        if (Records && Records.length > 0) {
-            const promises = [];
-            // NOTE: SNS has always just single record, let's just keep the pattern for multiple records for later use
-            Records.forEach((record) => {
-                if (record.Sns) {
-                    const message = record.Sns.Message && JSON.parse(record.Sns.Message);
-                    // PROCESS by high level TYPE
-                    if (message && message.type === 'codecommit') {
-                        const { payload } = message;
-                        const ccEvent = payload.event;
-                        // PROCESS by event type
-                        if (ccEvent === 'referenceCreated' || ccEvent === 'referenceCreated ') {
-                            log.debug('Processing commit event.', message);
-                            // no action for now
-                        } else if (ccEvent === 'pullRequestApprovalRuleCreated' || ccEvent === 'pullRequestApprovalRuleOverridden' || ccEvent === 'pullRequestApprovalRuleUpdated') {
-                            log.debug('Processing approvalrule event.', message);
-                            promises.push(processPullRequestEvent(payload));
-                        } else if (ccEvent === 'pullRequestCreated' || ccEvent === 'pullRequestStatusChanged') {
-                            log.debug('Processing pullrequest event.', message);
-                            promises.push(processPullRequestEvent(payload));
-                        } else {
-                            // don't care about this event
-                            log.debug('Not processing.', message);
-                        }
-                    } else if (message && message.type === 'codebuild') {
-                        const { payload } = message;
-                        log.debug('Processing codebuild event', message);
-                    } else if (message && message.type === 'codepipeline') {
-                        const { payload } = message;
-                        log.debug('Processing codepipeline event', message);
-                        promises.push(processPipelineEvent(payload));
-                    }
-                }
-            });
-
-            // wait for all promises to finish
-            const data = await Promise.allSettled(promises);
-
-            // just log info about processing
-            data.forEach((result) => {
-                if (result.status === 'rejected') {
-                    log.error('Error processing event.', result.reason);
-                } else {
-                    log.info('Processing done.', result.value);
-                }
-            });
-        }
-    } catch (err) {
-        log.error('Error processing event.', err);
-        return err;
-    }
-    return 'done';
+const processCommitEvent = async (record, message) => {
+    log.debug('Processing commit event.', message);
 };
+const processOtherCodeCommmitEvent = async (record, message) => {
+    log.debug('Other CodeCommit events not implemented.', message);
+};
+const processCodeBuildEvent = async (record, message) => {
+    log.debug('CodeBuild event not implemented.', message);
+};
+
+/**
+ * test for SNS record
+ * @param {any} record
+ */
+const isSnsRecord = (record) => record.EventSource === 'aws:sns' && !!record.Sns;
+
+/**
+ * Helper to create handler for lambda
+ * @param {any} options
+ */
+const createHandler = (options) => async (event, context) => {
+    log.debug('Starting with event', event);
+    const { Records } = event;
+
+    // process all records by type in parallel
+    if (Records && Records.length > 0) {
+        // NOTE: SNS has always just single record, let's just keep the pattern for multiple records for later use
+        const promises = Records.map((record) => {
+            if (isSnsRecord(record)) {
+                const message = (record.Sns.Message && JSON.parse(record.Sns.Message)) || {};
+                const route = options.sns.find((rt) => rt.testType(record, message));
+                if (route) {
+                    return route.action(record, message);
+                }
+                log.warn('No matching route for record:', record);
+            }
+            return undefined;
+        }).filter((p) => !!p);
+
+        const errResults = await Promise.allSettled(promises).then((res) => res.filter((r) => r.status === 'rejected'));
+        errResults.forEach((err) => log.error('Unable to process record:', err));
+    }
+};
+
+/**
+ * main lambda handler
+ */
+exports.lambdaHandler = createHandler({
+    sns: [
+        {
+            testType: (record, message) => {
+                const ccEvent = (message.payload || {}).event;
+                return message.type === 'codecommit' && ccEvent === 'referenceCreated';
+            },
+            action: processCommitEvent,
+        }, {
+            testType: (record, message) => {
+                const ccEvent = (message.payload || {}).event;
+                return message.type === 'codecommit' && (ccEvent === 'pullRequestApprovalRuleCreated' || ccEvent === 'pullRequestApprovalRuleOverridden' || ccEvent === 'pullRequestApprovalRuleUpdated');
+            },
+            action: processPullRequestEvent,
+        }, {
+            testType: (record, message) => {
+                const ccEvent = (message.payload || {}).event;
+                return message.type === 'codecommit' && (ccEvent === 'pullRequestCreated' || ccEvent === 'pullRequestStatusChanged');
+            },
+            action: processPullRequestEvent,
+        }, {
+            testType: (record, message) => message.type === 'codecommit',
+            action: processOtherCodeCommmitEvent,
+        }, {
+            testType: (record, message) => message.type === 'codebuild',
+            action: processCodeBuildEvent,
+        }, {
+            testType: (record, message) => message.type === 'codepipeline',
+            action: processPipelineEvent,
+        },
+    ],
+});

@@ -3,7 +3,6 @@ const log = require('../util/log');
 
 const codepipeline = new AWS.CodePipeline();
 
-
 // const getPipelineExecution = async (pipelineExecutionId, pipelineName) => {
 //     const params = {
 //         pipelineExecutionId,

@@ -11,7 +11,7 @@ This project is about resources helping automate and improve DevOps processes.
 ## Covering areas / usecases
 
 ### PullRequest notification
-When there is some change on pull request it sends info email to approver defined on a pull request.
+When there is some change on pull request it sends info email to an approver defined on a pull request.
 
 __Note__: approver for pull request needs to be added manually as the IAM user name. Or we can create an approver template for a repository, but there is no support for this in CloudFormation, so it needs to be created manually too.
 

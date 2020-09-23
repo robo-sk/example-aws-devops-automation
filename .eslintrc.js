@@ -1,7 +1,8 @@
 module.exports = {
     parser: '@typescript-eslint/parser',
     plugins: ['@typescript-eslint'],
-    extends: ['airbnb'],
+    extends: ['airbnb-base'],
+    root: true,
     settings: {
         'import/extensions': ['.js', '.jsx', '.ts', '.tsx'],
         'import/parsers': {
@@ -15,6 +16,7 @@ module.exports = {
         'import/core-modules': ['aws-sdk'],
     },
     rules: {
+        'linebreak-style': 0,
         'max-len': ['error', { code: 300, ignoreUrls: true }],
         'no-new': 'off',
         indent: ['error', 4],

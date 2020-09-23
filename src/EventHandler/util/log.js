@@ -50,7 +50,6 @@ const warn = (...args) => INFO && log('warn', ...args);
 const info = (...args) => INFO && log('info', ...args);
 const debug = (...args) => DEBUG && log('debug', ...args);
 
-
 exports.error = err;
 exports.warn = warn;
 exports.info = info;
